@@ -5,7 +5,7 @@
 package sqlc
 
 import (
-	"database/sql"
+	"time"
 )
 
 type Account struct {
@@ -13,20 +13,22 @@ type Account struct {
 	Owner     string
 	Balance   int64
 	Currency  string
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 }
 
 type Entry struct {
 	ID        int64
-	AccountID sql.NullInt64
+	AccountID int64
+	// can be negative or positive
 	Amount    int64
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 }
 
 type Transfer struct {
-	ID          int64
-	FromAccount sql.NullInt64
-	ToAccount   sql.NullInt64
-	Amount      int64
-	CreatedAt   sql.NullTime
+	ID            int64
+	FromAccountID int64
+	ToAccountID   int64
+	// must be positive
+	Amount    int64
+	CreatedAt time.Time
 }
