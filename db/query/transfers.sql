@@ -1,21 +1,22 @@
--- name: CreateTransfer :execresult
-INSERT INTO transfers (from_account, to_account, amount)
-VALUES (?, ?, ?);
+
+-- name: CreateTransfer :one
+INSERT INTO transfers (
+  from_account_id,
+  to_account_id,
+  amount
+) VALUES (
+  $1, $2, $3
+) RETURNING *;
 
 -- name: GetTransfer :one
 SELECT * FROM transfers
-WHERE id = ?;
+WHERE id = $1 LIMIT 1;
 
 -- name: ListTransfers :many
 SELECT * FROM transfers
-ORDER BY id ASC
-LIMIT ? OFFSET ?;
-
--- name: UpdateTransfer :exec
-UPDATE transfers
-SET amount = ?
-WHERE id = ?;
-
--- name: DeleteTransfer :exec
-DELETE FROM transfers
-WHERE id = ?;
+WHERE 
+    from_account_id = $1 OR
+    to_account_id = $2
+ORDER BY id
+LIMIT $3
+OFFSET $4;

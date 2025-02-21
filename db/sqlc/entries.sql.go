@@ -7,36 +7,37 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
 )
 
-const createEntry = `-- name: CreateEntry :execresult
-INSERT INTO entries (account_id, amount)
-VALUES (?, ?)
+const createEntry = `-- name: CreateEntry :one
+INSERT INTO entries (
+  account_id,
+  amount
+) VALUES (
+  $1, $2
+) RETURNING id, account_id, amount, created_at
 `
 
 type CreateEntryParams struct {
-	AccountID sql.NullInt64
+	AccountID int64
 	Amount    int64
 }
 
-func (q *Queries) CreateEntry(ctx context.Context, arg CreateEntryParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, createEntry, arg.AccountID, arg.Amount)
-}
-
-const deleteEntry = `-- name: DeleteEntry :exec
-DELETE FROM entries
-WHERE id = ?
-`
-
-func (q *Queries) DeleteEntry(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteEntry, id)
-	return err
+func (q *Queries) CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error) {
+	row := q.db.QueryRowContext(ctx, createEntry, arg.AccountID, arg.Amount)
+	var i Entry
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Amount,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getEntry = `-- name: GetEntry :one
 SELECT id, account_id, amount, created_at FROM entries
-WHERE id = ?
+WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetEntry(ctx context.Context, id int64) (Entry, error) {
@@ -53,17 +54,20 @@ func (q *Queries) GetEntry(ctx context.Context, id int64) (Entry, error) {
 
 const listEntries = `-- name: ListEntries :many
 SELECT id, account_id, amount, created_at FROM entries
-ORDER BY id ASC
-LIMIT ? OFFSET ?
+WHERE account_id = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3
 `
 
 type ListEntriesParams struct {
-	Limit  int32
-	Offset int32
+	AccountID int64
+	Limit     int32
+	Offset    int32
 }
 
 func (q *Queries) ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error) {
-	rows, err := q.db.QueryContext(ctx, listEntries, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listEntries, arg.AccountID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -88,20 +92,4 @@ func (q *Queries) ListEntries(ctx context.Context, arg ListEntriesParams) ([]Ent
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateEntry = `-- name: UpdateEntry :exec
-UPDATE entries
-SET amount = ?
-WHERE id = ?
-`
-
-type UpdateEntryParams struct {
-	Amount int64
-	ID     int64
-}
-
-func (q *Queries) UpdateEntry(ctx context.Context, arg UpdateEntryParams) error {
-	_, err := q.db.ExecContext(ctx, updateEntry, arg.Amount, arg.ID)
-	return err
 }
