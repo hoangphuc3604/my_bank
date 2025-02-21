@@ -13,3 +13,6 @@ migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 migratedown:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
+server:
+	go run main.go
+.PHONY: sqlc test createdb dropdb migrateup migratedown server

@@ -1,0 +1,27 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build artifacts
+/dist/
+/bin/
+/build/
+
+# Go modules
+/go.mod
+/go.sum
+/vendor/
+
+# Compiled object files
+*.o
+*.a
+
+# IDE/editor files
+.vscode/
+.idea/
+*.iml
