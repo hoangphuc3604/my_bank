@@ -19,10 +19,12 @@ FOR NO KEY UPDATE;
 
 -- name: ListAccounts :many
 SELECT * FROM accounts
-WHERE owner = $1
 ORDER BY id
-LIMIT $2
-OFFSET $3;
+LIMIT $1
+OFFSET $2;
+
+-- name: CountAccounts :one
+SELECT count(*) FROM accounts;
 
 -- name: UpdateAccount :one
 UPDATE accounts
