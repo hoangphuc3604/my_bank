@@ -6,26 +6,28 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 var testQueries *Queries
 var testDB *sql.DB
+var testStore *Store
+
+const (
+	dbDriver = "postgres"
+	dbSource = "postgresql://root:root@localhost:5432/my_bank?sslmode=disable"
+)
 
 func TestMain(m *testing.M) {
-	dsn := "root:root@tcp(127.0.0.1:3306)/my_bank?charset=utf8mb4&parseTime=True&loc=Local"
 	var err error
 
-	testDB, err = sql.Open("mysql", dsn)
+	testDB, err = sql.Open(dbDriver, dbSource)
 	if err != nil {
 		log.Fatal("Không thể kết nối database:", err)
 	}
 
-	if err = testDB.Ping(); err != nil {
-		log.Fatal("Không thể ping database:", err)
-	}
-
 	testQueries = New(testDB)
+	testStore = NewStore(testDB)
 
 	os.Exit(m.Run())
 }
