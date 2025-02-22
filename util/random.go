@@ -25,6 +25,10 @@ func RandBalance(min, max int64) int64 {
 }
 
 func RandCurrency() string {
-	currencies := []string{"EUR", "USD", "VND", "YEN"}
+	currencies := []string{USD, EUR, GBP, JPY, AUD}
 	return currencies[rand.Intn(len(currencies))]
+}
+
+func RandEmail() string {
+	return RandOwner() + "@gmail.com"
 }
