@@ -109,3 +109,23 @@ func ErrorCanNotCountEntities(entityName string, err error) *AppErr {
 		fmt.Sprintf("CAN_NOT_COUNT_%s", strings.ToUpper(entityName)),
 	)
 }
+
+func ErrorCanNotTransfer(err error) *AppErr {
+	return NewCustomError(err, "Can not transfer", "CAN_NOT_TRANSFER")
+}
+
+func ErrorCurrencyMismatch(err error) *AppErr {
+	return NewCustomError(
+		err,
+		"Account currency mismatch",
+		"ACCOUNT_CURRENCY_MISMATCH",
+	)
+}
+
+func ErrorDuplicatedEntity(entityName string) *AppErr {
+	return NewCustomError(
+		fmt.Errorf("%s already exists", entityName),
+		fmt.Sprintf("%s already exists", entityName),
+		fmt.Sprintf("DUPLICATED_%s", strings.ToUpper(entityName)),
+	)
+}
