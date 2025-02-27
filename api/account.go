@@ -12,7 +12,7 @@ import (
 
 type createAccountRequest struct {
 	Owner    string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=USD EUR"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 type getAccountRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
@@ -35,8 +35,12 @@ func (server *Server) createAccount(ctx *gin.Context) {
 
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
-			case "foreign_key_violation", "unique_violation":
-				ctx.JSON(http.StatusForbidden, common.ErrorResponse(common.ErrorDuplicatedEntity(common.AccountTableName)))
+			case "foreign_key_violation":
+				ctx.JSON(http.StatusForbidden, common.ErrorResponse(common.ErrorNotExists(common.UserTableName, err)))
+				return
+
+			case "unique_violation":
+				ctx.JSON(http.StatusConflict, common.ErrorResponse(common.ErrorAlreadyExists(common.AccountTableName, err)))
 				return
 			}
 		}
@@ -92,8 +96,4 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(accounts, request, nil))
-}
-
-func (server *Server) Start(address string) error {
-	return server.router.Run(address)
 }

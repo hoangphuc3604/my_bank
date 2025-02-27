@@ -25,6 +25,12 @@ func NewServer(store *sqlc.Store) *Server {
 	router.GET("/accounts", server.listAccounts)
 	
 	router.POST("/transfers", server.createTransfer)
+
+	router.POST("/users", server.createUser)
 	server.router = router
 	return server
+}
+
+func (server *Server) Start(address string) error {
+	return server.router.Run(address)
 }

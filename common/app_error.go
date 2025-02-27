@@ -13,6 +13,7 @@ const (
 	AccountTableName = "Account"
 	TransferTableName = "Transfer"
 	EntryTableName = "Entry"
+	UserTableName = "User"
 )
 
 type AppErr struct {
@@ -52,12 +53,12 @@ func (e *AppErr) Error() string {
 	return e.RootError().Error()
 }
 
-func NewCustomError(root error, message string, key string) *AppErr {
+func NewCustomError(code int, root error, message string, key string) *AppErr {
 	if root != nil {
-		return BadRequestResponse(root, message, root.Error(), key)
+		return NewFullErrorResponse(code, root, message, root.Error(), key)
 	}
 
-	return BadRequestResponse(errors.New(message), message, message, key)
+	return NewFullErrorResponse(code, errors.New(message), message, message, key)
 }
 
 func ErrorDB(err error) *AppErr {
@@ -65,7 +66,7 @@ func ErrorDB(err error) *AppErr {
 }
 
 func ErrorBinding(err error) *AppErr {
-	return NewCustomError(err, "Binding error", "BINDING_ERROR")
+	return NewCustomError(http.StatusInternalServerError, err, "Binding error", "BINDING_ERROR")
 }
 
 func ErrorNotFound(entityName string) *AppErr {
@@ -80,6 +81,7 @@ func ErrorNotFound(entityName string) *AppErr {
 
 func ErrorCanNotCreateEntity(entityName string, err error) *AppErr {
 	return NewCustomError(
+		http.StatusInternalServerError,
 		err,
 		fmt.Sprintf("Can not create %s", strings.ToLower(entityName)),
 		fmt.Sprintf("CAN_NOT_CREATE_%s", strings.ToUpper(entityName)),
@@ -88,6 +90,7 @@ func ErrorCanNotCreateEntity(entityName string, err error) *AppErr {
 
 func ErrorCanNotGetEntity(entityName string, err error) *AppErr {
 	return NewCustomError(
+		http.StatusInternalServerError,
 		err,
 		fmt.Sprintf("Can not get %s", strings.ToLower(entityName)),
 		fmt.Sprintf("CAN_NOT_GET_%s", strings.ToUpper(entityName)),
@@ -96,6 +99,7 @@ func ErrorCanNotGetEntity(entityName string, err error) *AppErr {
 
 func ErrorCanNotListEntities(entityName string, err error) *AppErr {
 	return NewCustomError(
+		http.StatusInternalServerError,
 		err,
 		fmt.Sprintf("Can not list %s", strings.ToLower(entityName)),
 		fmt.Sprintf("CAN_NOT_LIST_%s", strings.ToUpper(entityName)),
@@ -104,6 +108,7 @@ func ErrorCanNotListEntities(entityName string, err error) *AppErr {
 
 func ErrorCanNotCountEntities(entityName string, err error) *AppErr {
 	return NewCustomError(
+		http.StatusInternalServerError,
 		err,
 		fmt.Sprintf("Can not count %s", strings.ToLower(entityName)),
 		fmt.Sprintf("CAN_NOT_COUNT_%s", strings.ToUpper(entityName)),
@@ -111,21 +116,45 @@ func ErrorCanNotCountEntities(entityName string, err error) *AppErr {
 }
 
 func ErrorCanNotTransfer(err error) *AppErr {
-	return NewCustomError(err, "Can not transfer", "CAN_NOT_TRANSFER")
+	return NewCustomError(http.StatusInternalServerError, err, "Can not transfer", "CAN_NOT_TRANSFER")
 }
 
 func ErrorCurrencyMismatch(err error) *AppErr {
 	return NewCustomError(
+		http.StatusInternalServerError,
 		err,
 		"Account currency mismatch",
 		"ACCOUNT_CURRENCY_MISMATCH",
 	)
 }
 
-func ErrorDuplicatedEntity(entityName string) *AppErr {
+func ErrorDuplicatedEntity(entityName string, err error) *AppErr {
 	return NewCustomError(
-		fmt.Errorf("%s already exists", entityName),
-		fmt.Sprintf("%s already exists", entityName),
+		http.StatusConflict,
+		err,
+		fmt.Sprintf("Duplicated %s", strings.ToLower(entityName)),
 		fmt.Sprintf("DUPLICATED_%s", strings.ToUpper(entityName)),
 	)
+}
+
+func ErrorNotExists(entityName string, err error) *AppErr {
+	return NewCustomError(
+		http.StatusConflict,
+		err,
+		fmt.Sprintf("%s not exists", strings.ToLower(entityName)),
+		fmt.Sprintf("NOT_EXISTS_%s", strings.ToUpper(entityName)),
+	)
+}
+
+func ErrorAlreadyExists(entityName string, err error) *AppErr {
+	return NewCustomError(
+		http.StatusConflict,
+		err,
+		fmt.Sprintf("%s already exists", strings.ToLower(entityName)),
+		fmt.Sprintf("ALREADY_EXISTS_%s", strings.ToUpper(entityName)),
+	)
+}
+
+func ErrorHashPassword(err error) *AppErr {
+	return NewCustomError(http.StatusInternalServerError, err, "Can not hash password", "HASH_PASSWORD")
 }
