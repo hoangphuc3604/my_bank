@@ -32,3 +32,11 @@ func RandCurrency() string {
 func RandEmail() string {
 	return RandOwner() + "@gmail.com"
 }
+
+func RandString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = alphabet[rand.Intn(len(alphabet))]
+	}
+	return string(b)
+}
