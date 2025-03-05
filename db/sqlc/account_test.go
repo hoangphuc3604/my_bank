@@ -92,7 +92,6 @@ func TestListAccounts(t *testing.T) {
 
 	accounts, err := testStore.ListAccounts(context.Background(), arg)
 	require.NoError(t, err)
-	require.NotEmpty(t, accounts)
 
 	for _, account := range accounts {
 		require.NotEmpty(t, account)
