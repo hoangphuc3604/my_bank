@@ -6,6 +6,8 @@ import (
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const DepositorRole = "depositor"
+const AdminRole = "admin"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
