@@ -2,16 +2,17 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hoangphuc3064/MyBank/common"
 	"github.com/hoangphuc3064/MyBank/db/sqlc"
+	"github.com/hoangphuc3064/MyBank/token"
 	"github.com/lib/pq"
 )
 
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,currency"`
 }
 type getAccountRequest struct {
@@ -25,8 +26,10 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	arg := sqlc.CreateAccountParams{
-		Owner:    request.Owner,
+		Owner:    authPayload.Username,
 		Currency: request.Currency,
 		Balance:  0,
 	}
@@ -69,6 +72,12 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if acc.Owner != authPayload.Username {
+		ctx.JSON(http.StatusForbidden, common.ErrorResponse(common.ErrorUnauthorized(fmt.Errorf("account does not belong to the authenticated user"))))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(acc))
 }
 
@@ -79,7 +88,9 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := sqlc.ListAccountsParams{
+		Owner: authPayload.Username,
 		Limit:  int32(request.Limit),
 		Offset: int32(request.Offset()),
 	}
