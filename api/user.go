@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hoangphuc3064/MyBank/common"
@@ -16,9 +18,22 @@ type createUserRequest struct {
 	Fullname   string `json:"fullname" binding:"required"`
 	Email      string `json:"email" binding:"required,email"`
 }
-// type getUserRequest struct {
-// 	Username string `uri:"username" binding:"required,alphanum"`
-// }
+
+type userResponse struct {
+	Username  string    `json:"username"`
+	Fullname  string    `json:"fullname"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func NewUserResponse(user sqlc.User) *userResponse {
+	return &userResponse{
+		Username:  user.Username,
+		Fullname:  user.Fullname,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	}
+}
 
 func (server *Server) createUser(ctx *gin.Context) {
 	var request createUserRequest
@@ -54,51 +69,53 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(user))
+	response := NewUserResponse(user)
+	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(response))
 }
 
-// func (server *Server) getUser(ctx *gin.Context) {
-// 	var request getUserRequest
-// 	if err := ctx.ShouldBindUri(&request); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.ErrorBinding(err)))
-// 	}
+type loginRequest struct {
+	Username    string `json:"username" binding:"required,alphanum"`
+	Password   string `json:"password" binding:"required,min=6"`
+}
 
-// 	acc, err := server.store.GetAccount(ctx, request.ID)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			ctx.JSON(http.StatusNotFound, common.ErrorResponse(common.ErrorNotFound(common.AccountTableName)))
-// 			return
-// 		}
+type loginResponse struct {
+	AccessToken string `json:"access_token"`
+	User 	  userResponse `json:"user"`
+}
 
-// 		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotGetEntity(common.AccountTableName, err)))
-// 		return
-// 	}
+func (server *Server) login(ctx *gin.Context) {
+	var request loginRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.ErrorBinding(err)))
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(acc))
-// }
+	user, err := server.store.GetUser(ctx, request.Username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, common.ErrorResponse(common.ErrorNotFound(common.UserTableName)))
+			return
+		}
 
-// func (server *Server) listUsers(ctx *gin.Context) {
-// 	var request common.Paging
-// 	if err := ctx.ShouldBindQuery(&request); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.ErrorBinding(err)))
-// 		return
-// 	}
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotGetEntity(common.UserTableName, err)))
+		return
+	}
 
-// 	arg := sqlc.ListAccountsParams{
-// 		Limit:  int32(request.Limit),
-// 		Offset: int32(request.Offset()),
-// 	}
+	err = util.CheckPassword(request.Password, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, common.ErrorResponse(common.ErrorUnauthorized(err)))
+		return
+	}
 
-// 	accounts, err := server.store.ListAccounts(ctx, arg)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotListEntities(common.AccountTableName, err)))
-// 		return
-// 	}
-// 	request.Total, err = server.store.CountAccounts(ctx)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCountEntities(common.AccountTableName, err)))
-// 		return
-// 	}
+	accessToken, _, err := server.tokenMaker.CreateToken(user.Username, "User",server.config.AccessTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCreateToken(err)))
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(accounts, request, nil))
-// }
+	response := loginResponse{
+		AccessToken: accessToken,
+		User: *NewUserResponse(user),
+	}
+	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(response))
+}

@@ -158,3 +158,11 @@ func ErrorAlreadyExists(entityName string, err error) *AppErr {
 func ErrorHashPassword(err error) *AppErr {
 	return NewCustomError(http.StatusInternalServerError, err, "Can not hash password", "HASH_PASSWORD")
 }
+
+func ErrorUnauthorized(err error) *AppErr {
+	return NewCustomError(http.StatusUnauthorized, err, "Unauthorized", "UNAUTHORIZED")
+}
+
+func ErrorCanNotCreateToken(err error) *AppErr {
+	return NewCustomError(http.StatusInternalServerError, err, "Can not create token", "CAN_NOT_CREATE_TOKEN")
+}
