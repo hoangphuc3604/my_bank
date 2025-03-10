@@ -16,8 +16,8 @@ func TestPaseto(t *testing.T) {
 	role := util.RandString(10)
 	duration := time.Minute
 
-	issuedAt := time.Now().Unix()
-	expiratedAt := time.Now().Add(duration).Unix()
+	issuedAt := time.Now()
+	expiratedAt := time.Now().Add(duration)
 
 	token, payload, err := maker.CreateToken(username, role, duration)
 	require.NoError(t, err)
@@ -28,8 +28,8 @@ func TestPaseto(t *testing.T) {
 	require.NotZero(t, payload.ID)
 	require.NotZero(t, payload.IssuedAt)
 	require.NotZero(t, payload.ExpiredAt)
-	require.WithinDuration(t, time.Unix(payload.IssuedAt, 0), time.Unix(issuedAt, 0), time.Second)
-	require.WithinDuration(t, time.Unix(payload.ExpiredAt, 0), time.Unix(expiratedAt, 0), time.Second)
+	require.WithinDuration(t, payload.IssuedAt, issuedAt, time.Second)
+	require.WithinDuration(t, payload.ExpiredAt, expiratedAt, time.Second)
 
 	payload2, err := maker.VerifyToken(token)
 	require.NoError(t, err)
@@ -41,6 +41,6 @@ func TestPaseto(t *testing.T) {
 	require.Equal(t, payload.Role, payload2.Role)
 	require.Equal(t, payload.IssuedAt, payload2.IssuedAt)
 	require.Equal(t, payload.ExpiredAt, payload2.ExpiredAt)
-	require.WithinDuration(t, time.Unix(payload2.IssuedAt, 0), time.Unix(issuedAt, 0), time.Second)
-	require.WithinDuration(t, time.Unix(payload2.ExpiredAt, 0), time.Unix(expiratedAt, 0), time.Second)
+	require.WithinDuration(t, payload2.IssuedAt, issuedAt, time.Second)
+	require.WithinDuration(t, payload2.ExpiredAt, expiratedAt, time.Second)
 }

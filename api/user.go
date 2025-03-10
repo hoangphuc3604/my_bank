@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/hoangphuc3064/MyBank/common"
 	"github.com/hoangphuc3064/MyBank/db/sqlc"
 	"github.com/hoangphuc3064/MyBank/util"
@@ -62,6 +63,9 @@ func (server *Server) createUser(ctx *gin.Context) {
 			case "unique_violation":
 				ctx.JSON(http.StatusConflict, common.ErrorResponse(common.ErrorAlreadyExists(common.UserTableName, err)))
 				return
+			default:
+				ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCreateEntity(common.UserTableName, err)))
+				return
 			}
 		}
 
@@ -80,7 +84,11 @@ type loginRequest struct {
 
 type loginResponse struct {
 	AccessToken string `json:"access_token"`
+	AccessTokenExpires time.Time `json:"access_token_expires"`
+	RefreshToken string `json:"refresh_token"`
+	RefreshTokenExpires time.Time `json:"refresh_token_expires"`
 	User 	  userResponse `json:"user"`
+	SessionID uuid.UUID `json:"session_id"`
 }
 
 func (server *Server) login(ctx *gin.Context) {
@@ -107,15 +115,39 @@ func (server *Server) login(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, _, err := server.tokenMaker.CreateToken(user.Username, "User",server.config.AccessTokenDuration)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, "User", server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCreateToken(err)))
 		return
 	}
 
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, "User", server.config.RefreshTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCreateToken(err)))
+		return
+	}
+
+	session, err := server.store.CreateSession(ctx, sqlc.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:    user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:   ctx.Request.UserAgent(),
+		IpAddress:  ctx.ClientIP(),
+		IsBlocked: false,
+		ExpiresAt: refreshPayload.ExpiredAt,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(common.ErrorCanNotCreateEntity(common.SessionTableName, err)))
+		return
+	}
+
 	response := loginResponse{
 		AccessToken: accessToken,
+		AccessTokenExpires: accessPayload.ExpiredAt,
+		RefreshToken: refreshToken,
+		RefreshTokenExpires: refreshPayload.ExpiredAt,
 		User: *NewUserResponse(user),
+		SessionID: session.ID,
 	}
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(response))
 }
