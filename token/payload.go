@@ -14,11 +14,11 @@ var (
 )
 
 type Payload struct {
-	ID        string `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Username  string `json:"username"`
 	Role      string `json:"role"`
-	IssuedAt  int64  `json:"issuedAt"`
-	ExpiredAt int64  `json:"expiredAt"`
+	IssuedAt  time.Time  `json:"issuedAt"`
+	ExpiredAt time.Time  `json:"expiredAt"`
 }
 
 func NewPayload(username string, role string, duration time.Duration) (*Payload, error) {
@@ -28,18 +28,18 @@ func NewPayload(username string, role string, duration time.Duration) (*Payload,
 	}
 
 	payload := &Payload{
-		ID:        tokenID.String(),
+		ID:        tokenID,
 		Username:  username,
 		Role:      role,
-		IssuedAt:  time.Now().Unix(),
-		ExpiredAt: time.Now().Add(duration).Unix(),
+		IssuedAt:  time.Now(),
+		ExpiredAt: time.Now().Add(duration),
 	}
 
 	return payload, nil
 }
 
 func (p *Payload) Valid() error {
-	if time.Now().Unix() > p.ExpiredAt {
+	if time.Now().After(p.ExpiredAt) {
 		return ErrExpiredToken
 	}
 	return nil
@@ -51,19 +51,19 @@ func (p *Payload) GetAudience() (jwt.ClaimStrings, error) {
 
 func (payload *Payload) GetExpirationTime() (*jwt.NumericDate, error) {
 	return &jwt.NumericDate{
-		Time: time.Unix(payload.ExpiredAt, 0),
+		Time: payload.ExpiredAt,
 	}, nil
 }
 
 func (payload *Payload) GetIssuedAt() (*jwt.NumericDate, error) {
 	return &jwt.NumericDate{
-		Time: time.Unix(payload.IssuedAt, 0),
+		Time: payload.IssuedAt,
 	}, nil
 }
 
 func (payload *Payload) GetNotBefore() (*jwt.NumericDate, error) {
 	return &jwt.NumericDate{
-		Time: time.Unix(payload.IssuedAt, 0),
+		Time: time.Now(),
 	}, nil
 }
 

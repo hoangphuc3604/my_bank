@@ -13,16 +13,19 @@ dropdb:
 	docker exec -it postgres dropdb my_bank
 
 migrateup:
-	/usr/bin/migrate -path db/migration -database "$(DB_URL)" -verbose up
+	/home/hoangphuc3604/go/bin/migrate -path db/migration -database "$(DB_URL)" -verbose up
 
 migrateup1:
-	/usr/bin/migrate -path db/migration -database "$(DB_URL)" -verbose up 1
+	/home/hoangphuc3604/go/bin/migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 migratedown:
-	/usr/bin/migrate -path db/migration -database "$(DB_URL)" -verbose down
+	/home/hoangphuc3604/go/bin/migrate -path db/migration -database "$(DB_URL)" -verbose down
 
 migratedown1:
-	/usr/bin/migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+	/home/hoangphuc3604/go/bin/migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(name)
 
 server:
 	go run main.go
