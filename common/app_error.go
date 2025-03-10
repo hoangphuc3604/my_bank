@@ -14,6 +14,14 @@ const (
 	TransferTableName = "Transfer"
 	EntryTableName = "Entry"
 	UserTableName = "User"
+	SessionTableName = "Session"
+)
+
+var (
+	ErrorSessionBlocked = fmt.Errorf("Session is blocked")
+	IncorrectSessionUsername = fmt.Errorf("Incorrect session username")
+	ErrorIncorrectRefreshToken = fmt.Errorf("Incorrect refresh token")
+	ErrorExpiredToken = fmt.Errorf("Token is expired")
 )
 
 type AppErr struct {
