@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_create_user.proto";
+import "rpc_login_user.proto";
+
+option go_package = "github.com/hoangphuc3064/MyBank/pb";
+
+service ServiceMyBank {
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {};
+    rpc Loginuser(LoginUserRequest) returns (LoginUserResponse) {};
+}
